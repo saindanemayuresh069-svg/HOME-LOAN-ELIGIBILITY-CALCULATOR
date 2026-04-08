@@ -42,27 +42,36 @@ def home_loan_calculator(data):
     additional_income = calculate_additional_income(data)
     total_income = income + additional_income
 
+    # Tenure
     max_age = 65 if emp_type == "government" else 60
     tenure = max_age - age
 
     if tenure <= 0:
         return {"eligible": False, "reason": "Age exceeds eligibility"}
 
-    if total_income < 50000:
-        base_foir = 0.40
-    elif total_income < 100000:
-        base_foir = 0.50
+    # FOIR override logic
+    custom_foir = data.get("custom_foir", None)
+
+    if custom_foir:
+        foir = custom_foir / 100
     else:
-        base_foir = 0.60
+        if total_income < 50000:
+            base_foir = 0.40
+        elif total_income < 100000:
+            base_foir = 0.50
+        else:
+            base_foir = 0.60
 
-    foir_cap = 0.55 if total_income < 75000 else 0.60
-    foir = min(base_foir, foir_cap)
+        foir_cap = 0.55 if total_income < 75000 else 0.60
+        foir = min(base_foir, foir_cap)
 
+    # EMI
     emi = (total_income * foir) - obligations
 
     if emi <= 0:
         return {"eligible": False, "reason": "High obligations"}
 
+    # Loan
     r = roi / (12 * 100)
     n = tenure * 12
     loan = emi * ((1 - (1 + r) ** (-n)) / r)
