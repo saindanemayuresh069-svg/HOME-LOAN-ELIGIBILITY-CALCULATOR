@@ -42,14 +42,12 @@ def home_loan_calculator(data):
     additional_income = calculate_additional_income(data)
     total_income = income + additional_income
 
-    # Tenure
     max_age = 65 if emp_type == "government" else 60
     tenure = max_age - age
 
     if tenure <= 0:
         return {"eligible": False, "reason": "Age exceeds eligibility"}
 
-    # ✅ FIXED FOIR LOGIC
     custom_foir = data.get("custom_foir")
 
     if custom_foir is not None:
