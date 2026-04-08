@@ -1,7 +1,6 @@
 import streamlit as st
 from calculator import home_loan_calculator
 
-# Page config
 st.set_page_config(
     page_title="Home Loan Eligibility Calculator",
     page_icon="🏠",
@@ -11,15 +10,12 @@ st.set_page_config(
 # Styling
 st.markdown("""
 <style>
-.main {
-    background-color: #f5f7fa;
-}
+.main { background-color: #f5f7fa; }
 .stButton>button {
     background-color: #1f77b4;
     color: white;
     border-radius: 10px;
     height: 3em;
-    width: 100%;
 }
 .stMetric {
     background-color: white;
@@ -35,7 +31,7 @@ col1, col2 = st.columns([1.5, 5])
 
 with col1:
     try:
-        st.image("logo.png", width=120)
+        st.image("logo.png", width=130)
     except:
         pass
 
@@ -48,27 +44,19 @@ with col2:
 # Tabs
 tab1, tab2 = st.tabs(["Calculator", "FOIR Settings"])
 
-# FOIR SETTINGS TAB
+# FOIR TAB
 with tab2:
+
     st.subheader("FOIR Settings")
 
-    st.write("""
-    Default Rules:
-    - <50K → 40%
-    - 50K–1L → 50%
-    - >1L → 60%
-    - Cap: 55% (<75K), 60% otherwise
-    """)
-
-    override = st.checkbox("Override FOIR")
-
-    custom_foir = None
+    override = st.checkbox("Enable FOIR Override")
 
     if override:
         custom_foir = st.slider("Set FOIR (%)", 10, 60, 50)
-        st.warning("Custom FOIR Applied")
-
-    st.session_state["custom_foir"] = custom_foir
+        st.session_state["custom_foir"] = custom_foir
+        st.success(f"Custom FOIR Applied: {custom_foir}%")
+    else:
+        st.session_state["custom_foir"] = None
 
 # CALCULATOR TAB
 with tab1:
@@ -111,6 +99,7 @@ with tab1:
         st.subheader("Results")
 
         if calculate:
+
             data = {
                 "gross_income": income,
                 "obligations": obligations,
