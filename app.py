@@ -8,10 +8,9 @@ from calculator import home_loan_calculator
 
 st.set_page_config(page_title="Home Loan Eligibility Calculator", layout="wide")
 
-# 🌙 Dark Mode
+# Dark Mode
 dark_mode = st.toggle("🌙 Dark Mode")
 
-# 🎨 Styling
 if dark_mode:
     st.markdown("""
     <style>
@@ -27,9 +26,13 @@ else:
     </style>
     """, unsafe_allow_html=True)
 
-# 🔥 Bigger KPI text
+# Hover effect
 st.markdown("""
 <style>
+.stMetric:hover {
+    transform: scale(1.05);
+    transition: 0.3s;
+}
 [data-testid="stMetricValue"] {
     font-size: 30px;
     font-weight: bold;
@@ -37,30 +40,28 @@ st.markdown("""
 </style>
 """, unsafe_allow_html=True)
 
-# 👤 User ID
+# User ID
 if "user_id" not in st.session_state:
     st.session_state["user_id"] = str(uuid.uuid4())[:8]
 
 # Header
-st.markdown("""
-<h1>🏠 Home Loan Eligibility Calculator</h1>
-<p>Developed by <b><i>Mayuresh Saindane</i></b></p>
-""", unsafe_allow_html=True)
+st.title("🏠 Home Loan Eligibility Calculator")
+st.caption("Smart Credit Decision Engine powered by Policy Logic & Risk Analytics")
+st.write("Developed by **_Mayuresh Saindane_**")
+st.caption(f"User ID: {st.session_state['user_id']}")
 
 # Tabs
 tab1, tab2, tab3 = st.tabs(["Calculator", "FOIR Settings", "Admin Dashboard"])
 
-# ================= FOIR TAB =================
+# FOIR TAB
 with tab2:
     override = st.checkbox("Enable FOIR Override")
-
     if override:
-        custom_foir = st.slider("Set FOIR (%)", 10, 60, 50)
-        st.session_state["custom_foir"] = custom_foir
+        st.session_state["custom_foir"] = st.slider("Set FOIR (%)", 10, 60, 50)
     else:
         st.session_state["custom_foir"] = None
 
-# ================= CALCULATOR =================
+# CALCULATOR
 with tab1:
 
     left, right = st.columns([1.2, 1.8])
@@ -95,55 +96,54 @@ with tab1:
 
         if calculate:
 
-            with st.spinner("Calculating..."):
+            data = {
+                "gross_income": income,
+                "obligations": obligations,
+                "age": age,
+                "roi": roi,
+                "employment_type": emp_type,
+                "rental_income": rental_income,
+                "rental_type": rental_type,
+                "incentive_type": incentive_type,
+                "monthly_incentives": monthly_incentives,
+                "y1": y1,
+                "y2": y2,
+                "y3": y3,
+                "custom_foir": st.session_state.get("custom_foir")
+            }
 
-                data = {
-                    "gross_income": income,
-                    "obligations": obligations,
-                    "age": age,
-                    "roi": roi,
-                    "employment_type": emp_type,
-                    "rental_income": rental_income,
-                    "rental_type": rental_type,
-                    "incentive_type": incentive_type,
-                    "monthly_incentives": monthly_incentives,
-                    "y1": y1,
-                    "y2": y2,
-                    "y3": y3,
-                    "custom_foir": st.session_state.get("custom_foir")
-                }
-
-                result = home_loan_calculator(data)
+            result = home_loan_calculator(data)
 
             if result["eligible"]:
 
                 st.success("✅ Eligible")
 
-                # 🔥 FULL WIDTH KPI
+                # KPI
                 k1, k2, k3 = st.columns(3)
-                k1.metric("💰 Loan", f"₹ {int(result['loan']):,}")
-                k2.metric("📊 EMI", f"₹ {int(result['emi']):,}")
-                k3.metric("📈 FOIR", f"{result['foir']}%")
+                k1.metric("💰 Eligible Loan Amount", f"₹ {int(result['loan']):,}")
+                k2.metric("📊 Monthly EMI", f"₹ {int(result['emi']):,}")
+                k3.metric("📈 FOIR Ratio", f"{result['foir']}%")
 
                 st.markdown("---")
 
-                # Decision
-                st.markdown("### 🎯 Decision")
+                # Decision Box
+                st.markdown("### 🎯 Credit Decision")
 
                 if result['foir'] <= 50:
-                    st.success("Approved ✅")
+                    st.markdown("<div style='background:#d4edda;padding:15px;border-radius:10px'><b>✅ Approved</b></div>", unsafe_allow_html=True)
                 elif result['foir'] <= 60:
-                    st.warning("Refer 🟡")
+                    st.markdown("<div style='background:#fff3cd;padding:15px;border-radius:10px'><b>🟡 Refer</b></div>", unsafe_allow_html=True)
                 else:
-                    st.error("Rejected ❌")
+                    st.markdown("<div style='background:#f8d7da;padding:15px;border-radius:10px'><b>❌ Rejected</b></div>", unsafe_allow_html=True)
 
                 # Risk
+                st.markdown("### ⚠️ Risk Assessment")
                 if result['foir'] <= 40:
-                    st.success("🟢 Low Risk")
+                    st.success("Low Risk")
                 elif result['foir'] <= 55:
-                    st.warning("🟡 Moderate Risk")
+                    st.warning("Moderate Risk")
                 else:
-                    st.error("🔴 High Risk")
+                    st.error("High Risk")
 
                 st.markdown("---")
 
@@ -155,10 +155,7 @@ with tab1:
 
                 st.bar_chart(df.set_index("Category"), use_container_width=True)
 
-                st.metric("Tenure", f"{result['tenure']} yrs")
-                st.metric("Additional Income", f"₹ {int(result['additional_income']):,}")
-
-                # Save data
+                # Save
                 file_exists = os.path.isfile("users_data.csv")
 
                 with open("users_data.csv", "a", newline="") as file:
@@ -175,17 +172,17 @@ with tab1:
                         datetime.now()
                     ])
 
-            else:
-                st.error(result["reason"])
-
-# ================= ADMIN DASHBOARD =================
+# ADMIN DASHBOARD
 with tab3:
 
-    st.subheader("📊 Admin Dashboard")
+    st.markdown("## 📊 Admin Analytics Dashboard")
 
     if os.path.exists("users_data.csv"):
 
         df = pd.read_csv("users_data.csv")
+
+        if "user_id" not in df.columns:
+            df["user_id"] = "unknown"
 
         a1, a2, a3, a4 = st.columns(4)
 
@@ -194,21 +191,13 @@ with tab3:
         a3.metric("Avg Loan", f"₹ {int(df['loan'].mean()):,}")
         a4.metric("Avg FOIR", f"{round(df['foir'].mean(),2)}%")
 
-        st.markdown("---")
-
         st.bar_chart(df["loan"])
         st.bar_chart(df["foir"])
 
-        df["timestamp"] = pd.to_datetime(df["timestamp"])
+        df["timestamp"] = pd.to_datetime(df["timestamp"], errors="coerce")
         st.line_chart(df.set_index("timestamp")["loan"])
 
         st.dataframe(df)
 
     else:
         st.info("No data yet")
-
-# Footer
-st.markdown("""
----
-<center>Developed by <b><i>Mayuresh Saindane</i></b></center>
-""", unsafe_allow_html=True)
