@@ -11,6 +11,7 @@ st.set_page_config(page_title="Home Loan Eligibility Calculator", layout="wide")
 # 🌙 Dark Mode
 dark_mode = st.toggle("🌙 Dark Mode")
 
+# 🎨 Styling
 if dark_mode:
     st.markdown("""
     <style>
@@ -25,6 +26,16 @@ else:
     .stMetric { background-color: white; padding: 15px; border-radius: 12px; }
     </style>
     """, unsafe_allow_html=True)
+
+# 🔥 Bigger KPI text
+st.markdown("""
+<style>
+[data-testid="stMetricValue"] {
+    font-size: 30px;
+    font-weight: bold;
+}
+</style>
+""", unsafe_allow_html=True)
 
 # 👤 User ID
 if "user_id" not in st.session_state:
@@ -49,17 +60,16 @@ with tab2:
     else:
         st.session_state["custom_foir"] = None
 
-# ================= CALCULATOR TAB =================
+# ================= CALCULATOR =================
 with tab1:
 
-    left, right = st.columns([1,1])
+    left, right = st.columns([1.2, 1.8])
 
     with left:
         income = st.number_input("Gross Income (₹)", value=0)
         obligations = st.number_input("Existing EMI (₹)", value=0)
         age = st.number_input("Age", value=30)
         roi = st.number_input("Interest Rate (%)", value=8.5)
-
         emp_type = st.selectbox("Employment Type", ["government", "private"])
 
         rental_income = st.number_input("Rental Income (₹)", value=0)
@@ -109,19 +119,33 @@ with tab1:
 
                 st.success("✅ Eligible")
 
-                # KPI
+                # 🔥 FULL WIDTH KPI
                 k1, k2, k3 = st.columns(3)
-                k1.metric("Loan", f"₹ {result['loan']:,}")
-                k2.metric("EMI", f"₹ {result['emi']:,}")
-                k3.metric("FOIR", f"{result['foir']}%")
+                k1.metric("💰 Loan", f"₹ {int(result['loan']):,}")
+                k2.metric("📊 EMI", f"₹ {int(result['emi']):,}")
+                k3.metric("📈 FOIR", f"{result['foir']}%")
+
+                st.markdown("---")
 
                 # Decision
+                st.markdown("### 🎯 Decision")
+
                 if result['foir'] <= 50:
-                    st.success("Decision: Approved ✅")
+                    st.success("Approved ✅")
                 elif result['foir'] <= 60:
-                    st.warning("Decision: Refer 🟡")
+                    st.warning("Refer 🟡")
                 else:
-                    st.error("Decision: Rejected ❌")
+                    st.error("Rejected ❌")
+
+                # Risk
+                if result['foir'] <= 40:
+                    st.success("🟢 Low Risk")
+                elif result['foir'] <= 55:
+                    st.warning("🟡 Moderate Risk")
+                else:
+                    st.error("🔴 High Risk")
+
+                st.markdown("---")
 
                 # Chart
                 df = pd.DataFrame({
@@ -129,23 +153,22 @@ with tab1:
                     "Amount": [income, result['emi']]
                 })
 
-                st.bar_chart(df.set_index("Category"))
+                st.bar_chart(df.set_index("Category"), use_container_width=True)
 
-                # ================= SAVE DATA =================
+                st.metric("Tenure", f"{result['tenure']} yrs")
+                st.metric("Additional Income", f"₹ {int(result['additional_income']):,}")
+
+                # Save data
                 file_exists = os.path.isfile("users_data.csv")
 
-                with open("users_data.csv", mode="a", newline="") as file:
+                with open("users_data.csv", "a", newline="") as file:
                     writer = csv.writer(file)
 
                     if not file_exists:
-                        writer.writerow([
-                            "user_id", "income", "loan", "emi",
-                            "foir", "timestamp"
-                        ])
+                        writer.writerow(["user_id", "loan", "emi", "foir", "timestamp"])
 
                     writer.writerow([
                         st.session_state["user_id"],
-                        income,
                         result["loan"],
                         result["emi"],
                         result["foir"],
@@ -158,44 +181,34 @@ with tab1:
 # ================= ADMIN DASHBOARD =================
 with tab3:
 
-    st.subheader("📊 Admin Analytics Dashboard")
+    st.subheader("📊 Admin Dashboard")
 
     if os.path.exists("users_data.csv"):
 
         df = pd.read_csv("users_data.csv")
 
-        total_users = df["user_id"].nunique()
-        total_cases = len(df)
-
-        avg_loan = int(df["loan"].mean())
-        avg_foir = round(df["foir"].mean(), 2)
-
-        # KPI
         a1, a2, a3, a4 = st.columns(4)
 
-        a1.metric("Total Users", total_users)
-        a2.metric("Total Calculations", total_cases)
-        a3.metric("Avg Loan", f"₹ {avg_loan:,}")
-        a4.metric("Avg FOIR", f"{avg_foir}%")
+        a1.metric("Users", df["user_id"].nunique())
+        a2.metric("Calculations", len(df))
+        a3.metric("Avg Loan", f"₹ {int(df['loan'].mean()):,}")
+        a4.metric("Avg FOIR", f"{round(df['foir'].mean(),2)}%")
 
         st.markdown("---")
 
-        # Charts
-        st.subheader("Loan Distribution")
         st.bar_chart(df["loan"])
-
-        st.subheader("FOIR Distribution")
         st.bar_chart(df["foir"])
 
-        st.subheader("Usage Over Time")
         df["timestamp"] = pd.to_datetime(df["timestamp"])
-        df = df.sort_values("timestamp")
         st.line_chart(df.set_index("timestamp")["loan"])
 
-        st.markdown("---")
-
-        st.subheader("User Data")
         st.dataframe(df)
 
     else:
-        st.info("No data available yet")
+        st.info("No data yet")
+
+# Footer
+st.markdown("""
+---
+<center>Developed by <b><i>Mayuresh Saindane</i></b></center>
+""", unsafe_allow_html=True)
