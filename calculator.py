@@ -49,10 +49,10 @@ def home_loan_calculator(data):
     if tenure <= 0:
         return {"eligible": False, "reason": "Age exceeds eligibility"}
 
-    # FOIR override logic
-    custom_foir = data.get("custom_foir", None)
+    # ✅ FIXED FOIR LOGIC
+    custom_foir = data.get("custom_foir")
 
-    if custom_foir:
+    if custom_foir is not None:
         foir = custom_foir / 100
     else:
         if total_income < 50000:
@@ -65,13 +65,11 @@ def home_loan_calculator(data):
         foir_cap = 0.55 if total_income < 75000 else 0.60
         foir = min(base_foir, foir_cap)
 
-    # EMI
     emi = (total_income * foir) - obligations
 
     if emi <= 0:
         return {"eligible": False, "reason": "High obligations"}
 
-    # Loan
     r = roi / (12 * 100)
     n = tenure * 12
     loan = emi * ((1 - (1 + r) ** (-n)) / r)
