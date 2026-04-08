@@ -1,6 +1,8 @@
 import streamlit as st
+import pandas as pd
 from calculator import home_loan_calculator
 
+# Page config
 st.set_page_config(
     page_title="Home Loan Eligibility Calculator",
     page_icon="🏠",
@@ -16,6 +18,7 @@ st.markdown("""
     color: white;
     border-radius: 10px;
     height: 3em;
+    width: 100%;
 }
 .stMetric {
     background-color: white;
@@ -44,9 +47,8 @@ with col2:
 # Tabs
 tab1, tab2 = st.tabs(["Calculator", "FOIR Settings"])
 
-# FOIR TAB
+# FOIR Settings Tab
 with tab2:
-
     st.subheader("FOIR Settings")
 
     override = st.checkbox("Enable FOIR Override")
@@ -58,7 +60,7 @@ with tab2:
     else:
         st.session_state["custom_foir"] = None
 
-# CALCULATOR TAB
+# Calculator Tab
 with tab1:
 
     left, right = st.columns([2, 1])
@@ -100,35 +102,64 @@ with tab1:
 
         if calculate:
 
-            data = {
-                "gross_income": income,
-                "obligations": obligations,
-                "age": age,
-                "roi": roi,
-                "employment_type": emp_type,
-                "rental_income": rental_income,
-                "rental_type": rental_type,
-                "incentive_type": incentive_type,
-                "monthly_incentives": monthly_incentives,
-                "y1": y1,
-                "y2": y2,
-                "y3": y3,
-                "custom_foir": st.session_state.get("custom_foir")
-            }
+            with st.spinner("Calculating eligibility..."):
+                data = {
+                    "gross_income": income,
+                    "obligations": obligations,
+                    "age": age,
+                    "roi": roi,
+                    "employment_type": emp_type,
+                    "rental_income": rental_income,
+                    "rental_type": rental_type,
+                    "incentive_type": incentive_type,
+                    "monthly_incentives": monthly_incentives,
+                    "y1": y1,
+                    "y2": y2,
+                    "y3": y3,
+                    "custom_foir": st.session_state.get("custom_foir")
+                }
 
-            result = home_loan_calculator(data)
+                result = home_loan_calculator(data)
 
             if result["eligible"]:
+
                 st.success("✅ Eligible")
 
-                col1, col2 = st.columns(2)
-                col3, col4 = st.columns(2)
+                # KPI Cards
+                st.subheader("Key Metrics")
+                k1, k2, k3 = st.columns(3)
+                k1.metric("💰 Loan Amount", f"₹ {result['loan']}")
+                k2.metric("📊 EMI", f"₹ {result['emi']}")
+                k3.metric("📈 FOIR", f"{result['foir']}%")
 
-                col1.metric("Loan Amount", f"₹ {result['loan']}")
-                col2.metric("EMI", f"₹ {result['emi']}")
-                col3.metric("FOIR", f"{result['foir']}%")
-                col4.metric("Tenure", f"{result['tenure']} yrs")
+                # Decision
+                if result['foir'] <= 50:
+                    decision = "Approved ✅"
+                elif result['foir'] <= 60:
+                    decision = "Refer 🟡"
+                else:
+                    decision = "Rejected ❌"
 
+                st.subheader(f"Decision: {decision}")
+
+                # Risk Indicator
+                if result['foir'] <= 40:
+                    st.success("🟢 Low Risk Profile")
+                elif result['foir'] <= 55:
+                    st.warning("🟡 Moderate Risk")
+                else:
+                    st.error("🔴 High Risk")
+
+                # Chart
+                st.subheader("Income vs EMI")
+                chart_data = pd.DataFrame({
+                    "Category": ["Income", "EMI"],
+                    "Amount": [income, result['emi']]
+                })
+                st.bar_chart(chart_data.set_index("Category"))
+
+                # Extra Info
+                st.metric("Tenure", f"{result['tenure']} yrs")
                 st.metric("Additional Income", f"₹ {result['additional_income']}")
 
             else:
